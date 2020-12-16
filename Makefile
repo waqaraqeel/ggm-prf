@@ -27,7 +27,7 @@ libbitarr.a: bit_array.o
 %.o: %.c %.h
 	$(CC) $(CFLAGS) $(OBJFLAGS) -c $< -o $@
 
-prf: prf.c libbitarr.a
+prf: prf.c libbitarr.a blake3/libblake3.so
 	$(CC) $(CFLAGS) $(OBJFLAGS) $^ -o $@
 
 clean:

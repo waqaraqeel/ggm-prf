@@ -3,66 +3,65 @@
 #include <stdio.h>
 #include <string.h>
 #include "bit_array.h"
+#include "blake3/blake3.h"
 
-#define ARG_LEN 32
+#define BLOCK 8
 
-typedef BIT_ARRAY* ggm;
+blake3_hasher hasher;
 
-size_t k;
+typedef BIT_ARRAY* ba;
 
-ggm prf(ggm sk, ggm x) {
-    // if x is 0 or 1 (base case)
-    if (bit_array_cmp_uint64(x, 0) == 0) {
-        ggm ans = bit_array_create(k/2);
-        bit_array_copy(ans, 0, sk, 0, k/2);
-        return ans;
-    }
-    if (bit_array_cmp_uint64(x, 1) == 0) {
-        ggm ans = bit_array_create(k/2);
-        bit_array_copy(ans, 0, sk, k/2, k/2);
-        return ans;
-    }
-    return sk;
+
+void* prg(void* in) {
+    blake3_hasher_init(&hasher);
+    blake3_hasher_update(&hasher, (uint8_t*) in, BLOCK/8);
+    void *out =  malloc(BLOCK*2);
+    blake3_hasher_finalize(&hasher, (uint8_t*) out, BLOCK/8*2);
+    return out;
 }
 
-int main(int argc, char** argv) {
-    // get key size
-    if (argc < 2) {
-        fprintf(stderr, "Expected argument key size k\n");
-        exit(2);
-    }
-    k = strtol(argv[1], NULL, 10);
+void prf(ba sk, ba x, ba ans) {
+    if (x->num_of_bits == 1) {
+        ans->words =  (uint64_t*) (prg((void*) sk->words) + (bit_array_get_bit(x, 0) ? BLOCK/8 : 0));
+    } else {
+        ba xp = bit_array_create(x->num_of_bits - 1);
+        bit_array_copy(xp, 0, x, 0, x->num_of_bits - 1);
+        ba prfp = bit_array_create(BLOCK);
+        prf(sk, xp, prfp);
 
-    ggm buf = bit_array_create(k);
-    // get randomness
-    size_t filled = getrandom(buf->words, k, 0);
-    if (filled < k) {
-        fprintf(stderr, "Could not read enough randomness\n");
-        exit(3);
+        ans->words = (uint64_t*) (prg((void*) prfp->words) + (bit_array_get_bit(x, 0) ? BLOCK/8 : 0));
+        bit_array_free(xp);
     }
-    // print our array
-    bit_array_print(buf, stdout);
-    printf("\n");
+    // This crashes the program. Perhaps blake3 is consuming the input
+    // so the pointer is no longer valid? Unlikely.
+    // bit_array_free(prfp);
+}
 
-    // read args from stdin
+int main() {
+    ba buf = bit_array_create(BLOCK);
+    size_t filled = getrandom(buf->words, BLOCK, 0);
+    if (filled < BLOCK) {
+        fprintf(stderr, "Could not read random\n");
+        exit(1);
+    }
+    bit_array_print(buf, stdout); printf("\n");
+
+    uint64_t arg;
+    char value[100];
     while(1) {
-        char* arg = (char*) malloc(ARG_LEN);
-        int read = scanf("%s", arg);
-        if (strcmp(arg, "-1") == 0 || read < 1)
+        size_t read = scanf("%ld", &arg);
+        if (read < 1)
             break;
+        ba x = bit_array_create(BLOCK);
+        x->words = &arg;
 
-        ggm x = bit_array_create(k);
-        bit_array_from_decimal(x, arg);
-
-        ggm ans = prf(buf, x);
-        bit_array_print(ans, stdout);
-        printf("\n");
-
-        free(arg);
-        bit_array_free(x);
-        bit_array_free(ans);
+        ba ans = bit_array_create(BLOCK);
+        prf(buf, x, ans);
+        bit_array_to_decimal(ans, value, 99); printf("%s\n", value);
+        bit_array_print(ans, stdout); printf("\n");
+        // bit_array_free(x);
+        // bit_array_free(ans);
     }
-
     bit_array_free(buf);
     return 0;
 }

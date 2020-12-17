@@ -28,13 +28,9 @@ void prf(ba sk, ba x, ba ans) {
         bit_array_copy(xp, 0, x, 0, x->num_of_bits - 1);
         ba prfp = bit_array_create(BLOCK);
         prf(sk, xp, prfp);
-
-        ans->words = (uint64_t*) (prg((void*) prfp->words) + (bit_array_get_bit(x, 0) ? BLOCK/8 : 0));
+        ans->words = (uint64_t*) (prg((void*) prfp->words) + (bit_array_get_bit(x, x->num_of_bits-1) ? BLOCK/8 : 0));
         bit_array_free(xp);
     }
-    // This crashes the program. Perhaps blake3 is consuming the input
-    // so the pointer is no longer valid? Unlikely.
-    // bit_array_free(prfp);
 }
 
 int main() {
@@ -47,7 +43,6 @@ int main() {
     bit_array_print(buf, stdout); printf("\n");
 
     uint64_t arg;
-    char value[100];
     while(1) {
         size_t read = scanf("%ld", &arg);
         if (read < 1)
@@ -57,10 +52,8 @@ int main() {
 
         ba ans = bit_array_create(BLOCK);
         prf(buf, x, ans);
-        bit_array_to_decimal(ans, value, 99); printf("%s\n", value);
+        bit_array_print(x, stdout); printf(" -> ");
         bit_array_print(ans, stdout); printf("\n");
-        // bit_array_free(x);
-        // bit_array_free(ans);
     }
     bit_array_free(buf);
     return 0;

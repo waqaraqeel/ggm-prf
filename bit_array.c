@@ -1240,9 +1240,9 @@ void bit_array_to_substr(const BIT_ARRAY* bitarr,
 // Print this array to a file stream.  Prints '0's and '1'.  Doesn't print newline.
 void bit_array_print(const BIT_ARRAY* bitarr, FILE* fout)
 {
-  bit_index_t i;
+  int i;
 
-  for(i = 0; i < bitarr->num_of_bits; i++)
+  for(i = bitarr->num_of_bits-1; i >= 0; i--)
   {
     fprintf(fout, "%c", bit_array_get(bitarr, i) ? '1' : '0');
   }

@@ -5,7 +5,7 @@
 #include "bit_array.h"
 #include "blake3/blake3.h"
 
-#define BLOCK 8
+#define BLOCK 16
 
 blake3_hasher hasher;
 

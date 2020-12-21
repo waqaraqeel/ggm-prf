@@ -1,11 +1,8 @@
-
-
-
-This is a simple and quick implementation of the Goldreich-Goldwasser-Micali
+This is a quick and simple implementation of the Goldreich-Goldwasser-Micali
 construction of pseudorandom functions
 [[GGM'84](https://dl.acm.org/doi/pdf/10.1145/3335741.3335752)].
 
-This construction requires a length-doubling pseudorandom generator (PRG). Such
+The GGM construction requires a length-doubling pseudorandom generator (PRG). Such
 PRGs can be constructed from one-way functions (OWF). This implementation uses
 the [Blake3](https://github.com/BLAKE3-team/BLAKE3) hash function as an OWF.
 
